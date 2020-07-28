@@ -2,9 +2,15 @@ require 'open-uri'
 require 'open_uri_redirections'
 require 'nokogiri'
 require 'csv'
+require 'openssl'
+require 'dotenv/load'
 
 def page_content(url)
-  Nokogiri::HTML(URI.open(url, "User-Agent"=>"Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:78.0) Gecko/20100101 Firefox/78.0", :allow_redirections => :all))
+  Nokogiri::HTML(URI.open(url, 
+    "User-Agent"                     => "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:78.0) Gecko/20100101 Firefox/78.0",
+    :allow_redirections              => :all,
+    :proxy_http_basic_authentication => [URI.parse("http://proxy.crawlera.com:8010"), ENV['CRAWLERA_KEY'], ""],
+    :ssl_verify_mode                 => OpenSSL::SSL::VERIFY_NONE))
 end
 
 def township_urls(state_html) 
@@ -33,7 +39,6 @@ end
 state_url     = "https://weedmaps.com/dispensaries/in/united-states/michigan/"
 state_content = page_content(state_url)
 township_urls = township_urls(state_content)
-csv = CSV.open("output.csv", "a+")
 
 headers = ["name", "phone", "email", "site"]
 CSV.open("output.csv", "a+") do |row|
@@ -45,8 +50,8 @@ for township_url in township_urls
   dispensary_urls  = dispensary_urls(township_content)
   for dispensary_url in dispensary_urls
     dispensary_content = page_content(dispensary_url)
-    data = dispensary_data(dispensary_content)
-    data_row = [data["name"], data["phone"], data["email"], data["site"]]
+    data               = dispensary_data(dispensary_content)
+    data_row           = [data["name"], data["phone"], data["email"], data["site"]]
     CSV.open("output.csv", "a+") do |row|
       row << data_row
     end
