@@ -19,8 +19,10 @@ def page_content(url)
     attempt_count += 1
     puts "Attempt: #{attempt_count}" if attempt_count > 1
     content        = URI.open(url, request_headers)
+  rescue OpenURI::HTTPError => e
+    puts "HTTP Error: #{e}"
   rescue SocketError, Net::ReadTimeout => e
-    puts "Error: #{e}"
+    puts "Read Timeout: #{e}"
     sleep 3
     retry if attempt_count < max_attempts
   else
